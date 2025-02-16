@@ -1,33 +1,31 @@
 package io.github.job.scheduler.entity;
 
-import io.github.job.scheduler.entity.enums.Status;
+import io.github.job.scheduler.entity.enums.STATUS;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Entity
-@Table(name = "tb_job_logs")
+@Table(name = "tb_logs_jobs")
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class Logs_Job {
+public class LogsJob {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "job_id")
     private Job job;
 
-    private LocalDateTime executionDate;
+    private String executionDate;
 
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private STATUS status;
 
-    private String error_message;
+    private String errorMessage;
 
 }
