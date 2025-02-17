@@ -1,13 +1,13 @@
 services:
-#  postgres:
-#    image: postgres:17.0
-#    restart: always
-#    ports:
-#      - 5432:5432
-#    environment:
-#      POSTGRES_USER: postgres
-#      POSTGRES_PASSWORD: postgres
-#      POSTGRES_DB: jobsdb
+  postgres:
+    image: postgres:17.0
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jobsdb
 
   rabbitmq:
     image: rabbitmq:4.0.5-management

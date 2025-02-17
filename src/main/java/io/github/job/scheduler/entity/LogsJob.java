@@ -17,7 +17,7 @@ public class LogsJob {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne
     @JoinColumn(name = "job_id")
     private Job job;
 

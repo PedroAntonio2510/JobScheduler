@@ -3,6 +3,7 @@ package io.github.job.scheduler.service;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.model.*;
 import io.github.job.scheduler.entity.Job;
+import io.github.job.scheduler.utils.CronUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +24,7 @@ public class EmailNotificationService {
                 .withMessage(new Message()
                         .withBody(new Body()
                                 .withHtml(new Content()
-                                        .withCharset("UTF-8").withData("You job with the name was scheduled: " + job.getName()))
+                                        .withCharset("UTF-8").withData("Your job with the name was scheduled: " + job.getName() + " with the following description " + CronUtils.getCronDate(job.getCronExpression())))
                                 .withText(new Content()
                                         .withCharset("UTF-8").withData(TEXTBODY)))
                         .withSubject(new Content()
@@ -38,7 +39,7 @@ public class EmailNotificationService {
                 .withMessage(new Message()
                         .withBody(new Body()
                                 .withHtml(new Content()
-                                        .withCharset("UTF-8").withData("Your job was scheduled to remember you(If you want to stop the notificiations, don`t forget to check as complete"))
+                                        .withCharset("UTF-8").withData("Your job was scheduled to remember you(If you want to stop the notificiations, don`t forget to delete"))
                                 .withText(new Content()
                                         .withCharset("UTF-8").withData(TEXTBODY)))
                         .withSubject(new Content()

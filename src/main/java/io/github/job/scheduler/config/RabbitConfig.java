@@ -21,6 +21,9 @@ public class RabbitConfig {
     @Value("${rabbitmq.jobs.complete.queue}")
     private String JOBS_COMPLETE_QUEUE;
 
+    @Value("${rabbitmq.jobs.schedule.queue}")
+    private String JOBS_SCHEDULE_QUEUE;
+
     @Value("${rabbitmq.jobs.exchange}")
     private String JOBS_EXCHANGE;
 
@@ -29,6 +32,9 @@ public class RabbitConfig {
 
     @Value("${rabbitmq.jobs.routingkey.complete}")
     private String JOBS_ROUTING_COMPLETE;
+
+    @Value("${rabbitmq.jobs.routingKey.scheduled}")
+    private String JOBS_ROUTING_SCHEDULE;
 
     @Bean
     public DirectExchange createExchange() {
@@ -46,6 +52,11 @@ public class RabbitConfig {
     }
 
     @Bean
+    public Queue jobScheduleQueue() {
+        return new Queue(JOBS_SCHEDULE_QUEUE, true);
+    }
+
+    @Bean
     public Binding bindingJobCreatedQueue(DirectExchange createExchange,
                                           Queue jobPendingQueue){
         return BindingBuilder.bind(jobPendingQueue)
@@ -59,6 +70,12 @@ public class RabbitConfig {
                 .to(createExchange).with(JOBS_ROUTING_COMPLETE);
     }
 
+    @Bean
+    public Binding bindingJobSchedule(DirectExchange createExchange,
+                                      Queue jobScheduleQueue){
+        return BindingBuilder.bind(jobScheduleQueue)
+                .to(createExchange).with(JOBS_ROUTING_SCHEDULE);
+    }
 
     @Bean
     public MessageConverter jsonMessageConverter() {

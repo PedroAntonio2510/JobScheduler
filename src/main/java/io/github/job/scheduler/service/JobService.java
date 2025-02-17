@@ -65,6 +65,7 @@ public class JobService {
 
     public Job updateJob(Job job) {
         validate(job);
+        rabbitTemplate.convertAndSend("jobs.exchange", "jobs-pending", job);
         return this.jobRepository.save(job);
     }
 
@@ -90,22 +91,21 @@ public class JobService {
 
     public void executarJob(Job job) {
 
-        LogsJob log = new LogsJob();
-        log.setJob(job);
-        log.setExecutionDate(CronUtils.getCronDate(job.getCronExpression()));
+        LogsJob jobLog = new LogsJob();
+        jobLog.setJob(job);
+        jobLog.setExecutionDate(CronUtils.getCronDate(job.getCronExpression()));
 
         try {
-            // Lógica de execução do job
-            rabbitTemplate.convertAndSend("jobs.exchange", "jobs-complete", job);
-            log.setStatus(STATUS.SUCESS);
+            jobLog.setStatus(STATUS.SUCESS);
         } catch (Exception e) {
-            log.setStatus(STATUS.ERROR);
-            log.setErrorMessage(e.getMessage());
+            jobLog.setStatus(STATUS.ERROR);
+            jobLog.setErrorMessage(e.getMessage());
         } finally {
-            logsJobService.createLog(log);
+            logsJobService.createLog(jobLog);
         }
+
+        log.info("Executando job");
         emailNotificationService.notificateSES();
-        rabbitTemplate.convertAndSend("jobs.exchange", "jobs-complete", job);
     }
 
     public Job getJobById(Long id) {
