@@ -2,9 +2,11 @@ package io.github.job.scheduler.controller;
 
 import io.github.job.scheduler.entity.Job;
 import io.github.job.scheduler.entity.dto.JobDTO;
+import io.github.job.scheduler.entity.dto.JobResponseDTO;
 import io.github.job.scheduler.service.JobService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +16,14 @@ public class JobController {
 
     @Autowired
     private JobService jobService;
+
+    @GetMapping
+    public ResponseEntity<Page<JobResponseDTO>> listJobs(@RequestParam(defaultValue = "0") int pageNo,
+                                                         @RequestParam(defaultValue = "10") int pageSize) {
+        var resultList = jobService.getAll(pageNo, pageSize);
+
+        return ResponseEntity.ok(resultList);
+    }
 
     @PostMapping
     public ResponseEntity<Job> saveJob(@RequestBody @Valid JobDTO data) {

@@ -3,13 +3,19 @@ package io.github.job.scheduler.service;
 import io.github.job.scheduler.entity.Job;
 import io.github.job.scheduler.entity.LogsJob;
 import io.github.job.scheduler.entity.dto.JobDTO;
+import io.github.job.scheduler.entity.dto.JobResponseDTO;
 import io.github.job.scheduler.entity.enums.STATUS;
 import io.github.job.scheduler.mapper.JobMapper;
 import io.github.job.scheduler.repository.JobRepository;
 import io.github.job.scheduler.utils.CronUtils;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
@@ -23,27 +29,24 @@ import java.util.concurrent.ScheduledFuture;
 @Slf4j
 public class JobService {
 
+    @Autowired
+    private JobRepository jobRepository;
 
-    private final JobRepository jobRepository;
-    private final LogsJobService logsJobService;
-    private final JobMapper jobMapper;
-    private final TaskScheduler taskScheduler;
-    private final RabbitTemplate rabbitTemplate;
-    private final EmailNotificationService emailNotificationService;
+    @Autowired
+    private LogsJobService logsJobService;
 
-    public JobService(JobRepository jobRepository,
-                      JobMapper jobMapper,
-                      TaskScheduler taskScheduler,
-                      RabbitTemplate rabbitTemplate,
-                      EmailNotificationService emailNotificationService,
-                      LogsJobService logsJobService) {
-        this.jobRepository = jobRepository;
-        this.jobMapper = jobMapper;
-        this.taskScheduler = taskScheduler;
-        this.rabbitTemplate = rabbitTemplate;
-        this.emailNotificationService = emailNotificationService;
-        this.logsJobService = logsJobService;
-    }
+    @Autowired
+    private JobMapper jobMapper;
+
+    @Autowired
+    private TaskScheduler taskScheduler;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private EmailNotificationService emailNotificationService;
+
 
     private final Map<Long, ScheduledFuture<?>> jobsActives = new HashMap<>();
 
@@ -58,9 +61,10 @@ public class JobService {
         Job newJob = jobMapper.toJob(data);
         newJob.setActivate(true);
 
+        Job jobSaved = this.jobRepository.save(newJob);
         rabbitTemplate.convertAndSend("jobs.exchange", "jobs-pending", newJob);
 
-        return this.jobRepository.save(newJob);
+        return jobSaved;
     }
 
     public Job updateJob(Job job) {
@@ -91,21 +95,28 @@ public class JobService {
 
     public void executarJob(Job job) {
 
+        Job jobFound = jobRepository.findById(job.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Job not found!"));
+
         LogsJob jobLog = new LogsJob();
-        jobLog.setJob(job);
-        jobLog.setExecutionDate(CronUtils.getCronDate(job.getCronExpression()));
+        jobLog.setJob(jobFound);
+        jobLog.setExecutionDate(CronUtils.getCronDate(jobFound.getCronExpression()));
 
         try {
+            emailNotificationService.notificateJobScheduledSES(job);
             jobLog.setStatus(STATUS.SUCESS);
         } catch (Exception e) {
             jobLog.setStatus(STATUS.ERROR);
             jobLog.setErrorMessage(e.getMessage());
         } finally {
-            logsJobService.createLog(jobLog);
+            logsJobService.createLog(job.getId(), jobLog.getErrorMessage());
         }
+    }
 
-        log.info("Executando job");
-        emailNotificationService.notificateSES();
+    public Page<JobResponseDTO> getAll(int pageNo, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        Page<Job> jobsPage = jobRepository.findAll(pageable);
+        return jobsPage.map(jobMapper::toJobResponseDTO);
     }
 
     public Job getJobById(Long id) {
